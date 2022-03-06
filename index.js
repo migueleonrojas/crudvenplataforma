@@ -529,7 +529,11 @@ router.delete('/delete_company',(req, res) => {
 
 });
 
+router.get('/prueba',(req,res) => {
 
+    res.send("Hola");
+
+});
 
 
 
