@@ -19,7 +19,7 @@ mongoose.connect('mongodb+srv://migueleonrojas:Venezuela.2022@cluster0.tsjtp.mon
     else{
         console.log('Conexion con el servidor de manera exitosa');
     }
-
+    /*  */
     
 
 });
