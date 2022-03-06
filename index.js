@@ -2,14 +2,17 @@ const express = require('express');
 const bodyparser = require('body-parser');
 const methodoverride = require('method-override');
 const http = require('http');
+const jwt = require('jsonwebtoken');
+const keys = require('./settings/keys');
 const cors = require('cors');
-
 const { Router } = require('express');
 const mongoose = require('mongoose');
 const schema = mongoose.Schema;
 const companyModel = require('./CompanyDataDB');
 const adminModel = require('./AdministratorDataDB');
 const e = require('express');
+const { sign } = require('crypto');
+const { route } = require('express/lib/router');
 mongoose.connect('mongodb+srv://migueleonrojas:Venezuela.2022@cluster0.tsjtp.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', (err, res) => {
 
     
@@ -24,17 +27,68 @@ mongoose.connect('mongodb+srv://migueleonrojas:Venezuela.2022@cluster0.tsjtp.mon
 
 });
 
+
+
 const app = express();
 app.use(cors());
-
+app.set('key',keys.key);
 app.use(bodyparser.urlencoded({ extended:false }));
 app.use(bodyparser.json());
 app.use(express.json( { limit: '50mb' } ));
 app.use(methodoverride());
 
+
+
 const router = express.Router();
 
-router.post('/consult_admin_for_id',(req, res) => {
+router.get('/prueba',(req,res) => {
+
+    res.send("Hola");
+
+});
+
+
+
+router.use((req, res, next) =>{
+
+    let token = req.headers['x-access-token'] || req.headers['authorization'];
+
+    if(!token){
+        res.status(401).send({
+            codigo: 0,
+            error: "Sin errores",
+            mensaje: 'Es necesario el token de autenticacion'
+            
+        })
+        return
+    }
+
+    if(token.startsWith('Bearer ')){
+        token = token.slice(7, token.length);
+        console.log(token);
+    }
+
+    if(token){
+        jwt.verify(token, app.get('key'), (error, decoded) => {
+            if(error){
+                return res.json({
+                    codigo: 0,
+                    error: "Sin errores",
+                    mensaje: 'El token no es valido'
+                })
+            }
+            else{
+                req.decoded = decoded;
+                next();
+            }
+        });
+    }
+
+});
+
+
+
+app.post('/consult_admin_for_id',router ,(req, res) => {
 
     let query = { _id: { $eq : req.body.id} };
 
@@ -71,7 +125,7 @@ router.post('/consult_admin_for_id',(req, res) => {
 
 });
 
-router.put('/login',(req, res) => {
+app.put('/login',router,(req, res) => {
     
     let query = { _id: req.body.id };
 
@@ -89,6 +143,8 @@ router.put('/login',(req, res) => {
             }
 
             else{
+                
+
                 res.send({
                     codigo: 1,
                     error:  'No hay errores' ,
@@ -101,7 +157,7 @@ router.put('/login',(req, res) => {
 
 });
 
-router.put('/logoff',(req, res) => {
+app.put('/logoff',router,(req, res) => {
     
     let query = { _id: req.body.id };
 
@@ -131,7 +187,7 @@ router.put('/logoff',(req, res) => {
 
 });
 
-router.post('/consult_admin', (req, res) => {  
+app.post('/consult_admin', (req, res) => {  
 
     let query = { $and: [ { Nombre: { $eq : req.body.nombre} }, { Password: { $eq: req.body.password  } } ]  };
     
@@ -156,11 +212,20 @@ router.post('/consult_admin', (req, res) => {
         }
 
         else{
+            const payload = {
+                check:true
+            };
+    
+            const token = jwt.sign(payload, app.get('key'),{
+                expiresIn: "7d"
+            });
+
             res.send({
                 codigo: 1,
                 error: "Sin errores",
                 mensaje: `Bienvenido ${req.body.nombre}`,
-                dataAdmin: respuesta
+                dataAdmin: respuesta,
+                token:token
             });
         }
 
@@ -168,7 +233,7 @@ router.post('/consult_admin', (req, res) => {
     
 });
 
-router.post('/register_administrator', (req, res) => {  
+app.post('/register_administrator',router, (req, res) => {  
 
     let objectAdmin = new adminModel();
     objectAdmin.Nombre = req.body.nombre;
@@ -197,7 +262,7 @@ router.post('/register_administrator', (req, res) => {
     
 });
 
-router.post('/register_company', (req, res) => {  
+app.post('/register_company',router, (req, res) => {  
     let objectCompany = new companyModel();
     objectCompany.Nombre = req.body.nombre;
     objectCompany.Rif = req.body.rif;
@@ -269,7 +334,7 @@ router.post('/register_company', (req, res) => {
     
 });
 
-router.put('/update_company',(req, res) => {
+app.put('/update_company',router ,(req, res) => {
     
     let idValidAdmin;
 
@@ -367,7 +432,7 @@ router.put('/update_company',(req, res) => {
 
 });
 
-router.post('/consult_companies', (req, res) =>{
+app.post('/consult_companies', router, (req, res) =>{
 
     let idValidAdmin;
 
@@ -438,7 +503,7 @@ router.post('/consult_companies', (req, res) =>{
     });
 });
 
-router.delete('/delete_company',(req, res) => {
+app.delete('/delete_company', router,(req, res) => {
     
     let idValidAdmin;
 
@@ -534,17 +599,13 @@ router.delete('/delete_company',(req, res) => {
 
 });
 
-router.get('/prueba',(req,res) => {
 
-    res.send("Hola");
-
-});
 
 
 
 
 app.listen(process.env.PORT || 3000, () =>{
-    console.log(`El servidor esta corriendo en el puerto ${process.env.PORT}`);
+    console.log(`El servidor esta corriendo`);
 
 })
 
