@@ -13,9 +13,14 @@ const e = require('express');
 mongoose.connect('mongodb+srv://migueleonrojas:Venezuela.2022@cluster0.tsjtp.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', (err, res) => {
 
     
-    if(err) throw err;
+    if(err){ 
+        throw err;
+    }
+    else{
+        console.log('Conexion con el servidor de manera exitosa');
+    }
 
-    console.log('Conexion con el servidor de manera exitosa');
+    
 
 });
 
