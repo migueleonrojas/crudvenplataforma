@@ -349,7 +349,7 @@ app.put('/update_company',router ,(req, res) => {
     
     let idValidAdmin;
 
-    let admin = req.body;
+    
 
     //valida si el codigo es valido para crear un object id
     if(mongoose.isValidObjectId(req.body.idAdmin)){
@@ -421,7 +421,7 @@ app.put('/update_company',router ,(req, res) => {
                             Nombre:req.body.nombreCompany,
                             Rif:req.body.rifCompany,
                             Direccion:req.body.direccionCompany
-                        }, admin, { runValidators: true },(err, respuesta) =>{
+                        }, { runValidators: true },(err, respuesta) =>{
                             //si hubo errores
                             if(err){
                                 res.send({
